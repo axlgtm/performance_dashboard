@@ -1,5 +1,5 @@
 from jinja2 import Environment, FileSystemLoader
-import shutil
+# import shutil
 
 def write ():
     environment = Environment(loader=FileSystemLoader("./static/templates/"))
@@ -16,7 +16,8 @@ def write ():
         "students": students,
         "test_name": 'halo',
         "max_score": 100,
+        "person": "aran kumar"
     }
     with open(results_filename, mode="w", encoding="utf-8") as results:
         results.write(results_template.render(context))
-        shutil.copy("tabel_report_yg_dipakai.html","./static/")
+        # shutil.copy("tabel_report.html","./static/")

@@ -5,16 +5,109 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Bootstrap demo</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <style>
+      body {
+        background: rgb(204,204,204); 
+      }
+      page {
+        background: white;
+        display: block;
+        margin: 0 auto;
+        margin-bottom: 0.5cm;
+        box-shadow: 0 0 0.5cm rgba(0,0,0,0.5);
+      }
+      page[size="A4"] {  
+        width: 21cm;
+        height: 29.7cm; 
+      }
+      .center-hor {
+        text-align: center;
+      }
+      .center-ver {
+        vertical-align: middle;
+      }
+      td {
+        text-align: center;
+      }
+    </style>
   </head>
-  <body>
+  <body class="py-5">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
-    <h1>{{ test_name }} Results</h1>
-    <ul>
-    {% for student in students %}
-        <li>
-        <em>{{ student.name }}:</em> {{ student.score }}/{{ max_score }}
-        </li>
-    {% endfor %}
-    </ul>
+    <page size="A4">
+      <div class="table-responsive p-5">
+        <table class="table table-bordered mx-auto">
+          <thead>
+            <tr>
+              <th colspan="2" class="center-hor bg-warning">Daily Report Utility Ratio</th>
+              <th class="center-hor bg-warning">Target</th>
+              <th class="center-hor bg-warning">25-Dec</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th rowspan="2" class="center-hor center-ver">Output</th>
+              <td>SDBP</td>
+              <td></td>
+              <td>69</td>
+            </tr>
+            <tr>
+              <td>DBFP</td>
+              <td></td>
+              <td>0</td>
+            </tr>
+            <tr>
+              <th class="center-hor">Water</th>
+              <td>(M3)</td>
+              <td> &#60 810 m3</td>
+              <td class="bg-success text-white">668</td>
+            </tr>
+            <tr>
+              <th rowspan="5" class="center-hor center-ver">Energi</th>
+              <td>Listrik (KWH)</td>
+              <td></td>
+              <td>45280</td>
+            </tr>
+            <tr>
+              <td>Solar(l)</td>
+              <td></td>
+              <td>0</td>
+            </tr>
+            <tr>
+              <td>Tasma (Ton Steam)</td>
+              <td></td>
+              <td>128,78</td>
+            </tr>
+            <tr>
+              <td>CNG (mmbtu)</td>
+              <td></td>
+              <td>27,69</td>
+            </tr>
+            <tr>
+              <td>Total Energi(KWH)</td>
+              <td></td>
+              <td>155866,51</td>
+            </tr>
+            <tr>
+              <th>Rasio Water</th>
+              <td>Total Ratio Water</td>
+              <td>&#60 3,22</td>
+              <td class="bg-success text-white">0</td>
+            </tr>
+            <tr>
+              <th>Rasio Energy</th>
+              <td>Total Rasio Energy</td>
+              <td>&#60 773,76</td>
+              <td class="bg-success text-white">0</td>
+            </tr>
+            <tr>
+              <th></th>
+              <td>Reported By</td>
+              <td></td>
+              <td>{{person}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </page>
 </body>
 </html>

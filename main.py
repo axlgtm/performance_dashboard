@@ -347,8 +347,9 @@ if uploaded_file is not None:
                 st.spinner("Processing your report")
                 write()
                 st.download_button(
-                    "Download template", Path("./static/tabel_report_yg_dipakai.html").read_bytes(), "tabel_report.html"
+                    "Download template", Path("./tabel_report.html").read_bytes(), "tabel_report.html"
                 )
+
     except Exception as e:
         st.error(e)
         st.error("Ada masalah saat membaca file excel, gunakan format sesuai template dan pastikan format dokumen sesuai dengan panduan.")
