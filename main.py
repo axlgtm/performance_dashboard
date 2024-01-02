@@ -4,6 +4,7 @@ pd.set_option('io.excel.xlsx.writer', 'openpyxl')
 import streamlit as st
 import utils as ut
 import plotly.express as px
+import numpy as np
 
 # st.write(Path("./static/template.xlsx").read_bytes())
 
@@ -44,7 +45,7 @@ if uploaded_file is not None:
             st.error("Generate kolom gagal, pastikan nama kolom sesuai dengan format template")
         ## ---- end generate kolom by excel ------
 
-        subtab_overview, subtab_table = st.tabs(['Overview', 'Prediksi'])
+        subtab_overview, subtab_table, subtab_prediksi, subtab_report = st.tabs(['Overview', 'Tabel', 'Prediksi', 'Report'])
 
         with subtab_overview:
             st.subheader("Quick Metrics",divider="blue")
@@ -142,6 +143,67 @@ if uploaded_file is not None:
                     tick0=""
                 )
                 st.plotly_chart(fig, use_container_width=True)
+        with subtab_table:
+            st.subheader("Tabel dan Prediksi", divider="blue")
+            # select tahun
+            listTahun = ut.getYear(dataframe)
+            year_select = st.selectbox("Pilih tahun", listTahun, help='Filter data berdasarkan tahun', key='st1')
+            # select bulan
+            listBulan = ut.getMonthFromYear(dataframe,year_select)
+            month_select = st.selectbox("Pilih bulan", listBulan, help='Filter data berdasarkan bulan', key='st2')
+            # select kolom
+            values = ut.getColumnName(dataframe, '-')
+            # values = values.insert(0, '-')
+            options = st.selectbox(
+                'Pilih kolom yang akan digunakan',
+                options= values,
+                key='select_data_prediksi',
+                help="Pilih data yang akan digunakan untuk analisa tabel dan prediksi"
+            )
+            if (options == "-"):
+                st.info("Pilih kolom data terlebih dahulu")
+            set_point = st.number_input(label='Masukkan nilai set point', min_value=0)
+
+            clicked = st.button(label='Submit')
+
+            if clicked and options != '-':
+                with st.spinner('Menerapkan nilai set point...'):
+                    filteredData = ut.filteredData(dataframe, year_select, month_select)
+                    filtered = pd.DataFrame(filteredData[options])
+                    c1, c2 = st.columns((2.5,7.5))
+                    if set_point > 0:
+                        filteredFormatted = np.round(filtered, decimals=2)
+                        data = filteredFormatted.style.map(lambda x: ut._color_red_or_green(x, set_point)).format(precision=2, thousands=".", decimal=",") 
+                        # data = filtered.style.map(lambda x: ut._color_red_or_green(x, set_point))  
+                        c1.dataframe(data)
+                    else:
+                        c1.dataframe(filtered)
+                    fig = px.line(filtered, x=filtered.index, y=options, markers=True, title=f'Nilai {options} pada bulan {month_select} tahun {year_select}')
+                # fig = px.bar(forecast, x=forecast.index, y=select, title=f'Prediksi nilai {select} 30 Hari ke depan', text=select)
+                    fig.update_layout(
+                            xaxis_title='Date', 
+                            yaxis_title='Value')
+                    fig.update_xaxes(
+                            dtick="86400000"
+                    )
+                    fig.update_traces(textfont_size=14)
+                    series = filtered.copy()
+                    series = series[options].apply(lambda x: float(f"{x: .2f}"))
+                    series = series.squeeze()
+                    filtered2 = series.to_frame(name=options)
+                    fig.add_bar(x=filtered.index, y=filtered2[options], text=filtered2[options], name=options) 
+                    # fig.add_vrect(annotation_textangle=90)
+                    fig.add_hline(y=set_point, line_width=3, line_dash="dash", line_color="red")
+                    c2.plotly_chart(fig, use_container_width=True)
+            elif clicked and options == '-':
+                st.warning('Pilih kolom data yang akan digunakan')
+            else:
+                st.info('Klik tombol submit untuk menerapkan nilai set point')
+        with subtab_prediksi:
+            st.subheader("Hasil Prediksi 30 hari kedepan")
+            selectModel = st.selectbox(label="Pilih model algoritma prediksi", options=["-","Prophet", "Auto ARIMA", "ARIMA"])
+            if selectModel == "-":
+                st.info("pilih model algoritma yang akan digunakan")
     except Exception as e:
         st.error(e)
         st.error("Ada masalah saat membaca file excel, gunakan format sesuai template dan pastikan format dokumen sesuai dengan panduan.")

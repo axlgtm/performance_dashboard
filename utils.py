@@ -3,6 +3,14 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 
+def setState(key, value):
+    st.session_state[key] = value  
+
+@st.cache_data
+def _color_red_or_green(val, set_point):
+    color = 'red' if val > set_point else 'green'
+    return f'background-color: {color}'
+
 def normalizeDataframe(dataFrame):
     dfCopy = dataFrame.copy()
     dfCopy['Tanggal'] = dfCopy['Tanggal'].dt.date
@@ -218,10 +226,10 @@ def sumOfYear(df: pd.DataFrame, y):
     df = df.set_index('Tanggal')
     df.index = np.array(pd.to_datetime(df.index))
     data = df[y].resample("Y").sum()
-    # yearData = utilities.sumByYear(data)
-    # yearData = yearData.reset_index()
-    # yearData.columns.values[0] = "tanggal"
-    # yearData['tanggal'] = yearData['tanggal'].apply(lambda x: x.strftime('%Y'))
-    # yearData = yearData.set_index('tanggal')
+    yearData = data
+    yearData = yearData.reset_index()
+    yearData.columns.values[0] = "tanggal"
+    yearData['tanggal'] = yearData['tanggal'].apply(lambda x: x.strftime('%Y'))
+    yearData = yearData.set_index('tanggal')
 
-    return data
+    return yearData
