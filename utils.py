@@ -120,6 +120,13 @@ def getMonthFromYear(dataframe, year):
     return display
 
 @st.cache_data
+def getDayFromMonth(dataframe, year, month):
+    df = dataframe.copy()
+    df = df.set_index('Tanggal')
+    monthByYear = df.loc[f'{year}-{month}']
+    return monthByYear.index.day
+
+@st.cache_data
 def filteredData(dataframe, year, month):
     df = dataframe.copy()
     df = df.set_index('Tanggal')

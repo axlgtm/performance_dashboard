@@ -5,6 +5,13 @@ import streamlit as st
 import utils as ut
 import plotly.express as px
 import numpy as np
+from prophet import Prophet
+import pmdarima
+from statsmodels.tsa.arima.model import ARIMA
+import datetime as dt
+import plotly
+import plotly.graph_objs as go
+from static.templateEngine import write
 
 # st.write(Path("./static/template.xlsx").read_bytes())
 
@@ -144,7 +151,7 @@ if uploaded_file is not None:
                 )
                 st.plotly_chart(fig, use_container_width=True)
         with subtab_table:
-            st.subheader("Tabel dan Prediksi", divider="blue")
+            st.subheader("Tabel", divider="blue")
             # select tahun
             listTahun = ut.getYear(dataframe)
             year_select = st.selectbox("Pilih tahun", listTahun, help='Filter data berdasarkan tahun', key='st1')
@@ -153,18 +160,17 @@ if uploaded_file is not None:
             month_select = st.selectbox("Pilih bulan", listBulan, help='Filter data berdasarkan bulan', key='st2')
             # select kolom
             values = ut.getColumnName(dataframe, '-')
-            # values = values.insert(0, '-')
             options = st.selectbox(
                 'Pilih kolom yang akan digunakan',
                 options= values,
-                key='select_data_prediksi',
+                key='select_data_tabel',
                 help="Pilih data yang akan digunakan untuk analisa tabel dan prediksi"
             )
             if (options == "-"):
                 st.info("Pilih kolom data terlebih dahulu")
             set_point = st.number_input(label='Masukkan nilai set point', min_value=0)
 
-            clicked = st.button(label='Submit')
+            clicked = st.button(label='Submit', key='btn1')
 
             if clicked and options != '-':
                 with st.spinner('Menerapkan nilai set point...'):
@@ -179,7 +185,6 @@ if uploaded_file is not None:
                     else:
                         c1.dataframe(filtered)
                     fig = px.line(filtered, x=filtered.index, y=options, markers=True, title=f'Nilai {options} pada bulan {month_select} tahun {year_select}')
-                # fig = px.bar(forecast, x=forecast.index, y=select, title=f'Prediksi nilai {select} 30 Hari ke depan', text=select)
                     fig.update_layout(
                             xaxis_title='Date', 
                             yaxis_title='Value')
@@ -201,9 +206,149 @@ if uploaded_file is not None:
                 st.info('Klik tombol submit untuk menerapkan nilai set point')
         with subtab_prediksi:
             st.subheader("Hasil Prediksi 30 hari kedepan")
+            values = ut.getColumnName(dataframe, '-')
+            options = st.selectbox(
+                'Pilih kolom yang akan digunakan',
+                options= values,
+                key='select_data_prediksi',
+                help="Pilih data yang akan digunakan untuk analisa tabel dan prediksi"
+            )
             selectModel = st.selectbox(label="Pilih model algoritma prediksi", options=["-","Prophet", "Auto ARIMA", "ARIMA"])
-            if selectModel == "-":
-                st.info("pilih model algoritma yang akan digunakan")
+            set_point = st.number_input(label='Masukkan nilai set point', min_value=0, key="set_point_predict")
+            clicked = st.button(label='Submit', key='btn2')
+            if clicked:
+                with st.spinner('Membuat prediksi...'):
+                    if options == "-":
+                        st.warning("Pilih kolom data yang akan digunakan")
+                    if selectModel == "-":
+                        st.warning("pilih model algoritma yang akan digunakan")
+                    elif selectModel == "Prophet":
+                        data = dataframe.copy()
+                        
+                        # data.columns.values[0] = "Tanggal"
+                        data['Tanggal'] = data['Tanggal'].apply(lambda x: x.strftime('%Y-%m-%d'))
+                        
+                        data = data.set_index('Tanggal')
+                        data = data[options]
+                        data = data.reset_index()
+                        data.columns = ['ds', 'y']
+                        data['ds']= np.array(pd.to_datetime(data['ds']))
+                        
+
+                        model = Prophet()
+                        # fit the model
+                        model.fit(data)
+
+                        # initializing date
+                        start_date = dt.datetime.strptime(f"{data['ds'].iloc[-1]}", "%Y-%m-%d %H:%M:%S")
+                        
+                        # initializing K
+                        K = 30
+                        
+                        future = pd.date_range(start_date, periods=K)
+                        future = pd.DataFrame(future)
+                        future.columns = ['ds']
+                        future['ds']= np.array(pd.to_datetime(future['ds']))
+
+                        #Predict 
+                        forecast = model.predict(future)
+                        forecast = forecast[["ds","yhat"]]
+                        forecast = pd.DataFrame(forecast)
+                        forecast.columns = ["date", options]
+                        forecast = forecast.set_index("date")
+                        
+                        c1, c2 = st.columns((2.5,7.5))
+                        if set_point > 0:
+                            filteredFormatted = np.round(forecast, decimals=2)
+                            data = filteredFormatted.style.map(lambda x: ut._color_red_or_green(x, set_point)).format(precision=2, thousands=".", decimal=",") 
+                            # data = filtered.style.map(lambda x: ut._color_red_or_green(x, set_point))  
+                            c1.dataframe(data)
+                        else:
+                            c1.dataframe(forecast)
+                        fig = px.line(forecast, x=forecast.index, y=options, markers=True, title=f'Prediksi nilai {options} 30 hari kedepan')
+                        fig.update_layout(
+                                xaxis_title='Date', 
+                                yaxis_title='Value')
+                        fig.update_xaxes(
+                                dtick="86400000"
+                        )
+                        fig.update_traces(textfont_size=14)
+                        series = forecast.copy()
+                        series = series[options].apply(lambda x: float(f"{x: .2f}"))
+                        series = series.squeeze()
+                        filtered2 = series.to_frame(name=options)
+                        fig.add_bar(x=forecast.index, y=filtered2[options], text=filtered2[options], name=options) 
+                        fig.add_hline(y=set_point, line_width=3, line_dash="dash", line_color="red")
+                        c2.plotly_chart(fig, use_container_width=True)
+                    elif selectModel == "Auto ARIMA":
+                        data = dataframe.copy()
+                        data = data.set_index('Tanggal')
+                        data = data[options]
+                        arima = pmdarima.auto_arima(data, 
+                        m=7, 
+                        # information_criterion="aicc", 
+                        suppress_warnings=True,
+                        trace=True,
+                        d=None, 
+                        test='adf',
+                        start_p=0, start_q=0,
+                        max_p=12, max_q=12)
+
+                        n_forecast = 30
+                        pred = arima.predict(n_forecast)
+                        # dates = pd.date_range(test.index[0], periods=n_forecast, freq="D")
+                        dates = pd.date_range(data.index[-1], periods=n_forecast, freq="D")
+                        pred = pd.DataFrame({
+                            "Tanggal": dates,
+                            "value": pred
+                        })
+                        pred = pred.set_index("Tanggal")
+                        c1, c2 = st.columns((2.5,7.5))
+                        if set_point > 0:
+                            filteredFormatted = np.round(pred, decimals=2)
+                            data = filteredFormatted.style.map(lambda x: ut._color_red_or_green(x, set_point)).format(precision=2, thousands=".", decimal=",") 
+                            # data = filtered.style.map(lambda x: ut._color_red_or_green(x, set_point))  
+                            c1.dataframe(data)
+                        else:
+                            c1.dataframe(pred)
+                        fig = px.line(pred, x=pred.index, y="value", markers=True, title=f'Prediksi nilai {options} 30 hari kedepan')
+                        fig.update_layout(
+                                xaxis_title='Date', 
+                                yaxis_title='Value')
+                        fig.update_xaxes(
+                                dtick="86400000"
+                        )
+                        fig.update_traces(textfont_size=14)
+                        series = pred.copy()
+                        series = series["value"].apply(lambda x: float(f"{x: .2f}"))
+                        series = series.squeeze()
+                        filtered2 = series.to_frame(name="value")
+                        fig.add_bar(x=pred.index, y=filtered2["value"], text=filtered2["value"], name="value") 
+                        fig.add_hline(y=set_point, line_width=3, line_dash="dash", line_color="red")
+                        c2.plotly_chart(fig, use_container_width=True)
+                    elif selectModel == "ARIMA":
+                        st.write("arima")
+            else:
+                st.info('Klik submit untuk memprediksi data')
+        with subtab_report:
+            st.subheader("Report", divider="blue")
+            listTahun = ut.getYear(dataframe)
+            year_select = st.selectbox("Pilih tahun", listTahun, help='Filter data berdasarkan tahun', key='reportst1')
+
+            listBulan = ut.getMonthFromYear(dataframe,year_select)
+            month_select = st.selectbox("Pilih bulan", listBulan, help='Filter data berdasarkan bulan', key='reportst2')
+
+            listTanggal = ut.getDayFromMonth(dataframe,year_select,month_select)
+            day_select = st.selectbox("Pilih tanggal", listTanggal, help='Filter data berdasarkan tanggal', key='reportst3')
+
+            clicked = st.button(label='Create Report', key='btn3')
+
+            if clicked:
+                st.spinner("Processing your report")
+                write()
+                st.download_button(
+                    "Download template", Path("./static/tabel_report_yg_dipakai.html").read_bytes(), "tabel_report.html"
+                )
     except Exception as e:
         st.error(e)
         st.error("Ada masalah saat membaca file excel, gunakan format sesuai template dan pastikan format dokumen sesuai dengan panduan.")
