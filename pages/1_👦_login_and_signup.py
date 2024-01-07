@@ -1,8 +1,5 @@
 import streamlit as st
 import streamlit_authenticator as stauth
-from sqlalchemy.orm import sessionmaker
-from project_orm import user, predefinedUser
-from sqlalchemy import create_engine
 import utils as ut
 from pathlib import Path
 
