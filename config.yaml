@@ -1,0 +1,17 @@
+cookie:
+  expiry_days: 30
+  key: abcde
+  name: dashboard_performance
+credentials:
+  usernames:
+    admin:
+      email: admin@gmail.com
+      name: admin
+      password: $2b$12$4kfYpSMauZeoLvx5Ae2Ha.E8gcySTaWdm3zEa6jps0zJlND/Owt1e
+    sadapudu:
+      email: email4@gmail.com
+      name: kehahaha
+      password: $2b$12$6bpluX1MfcHMCUdqhg4bDOMcZMrImVHAoK2Yo3DghPomdBr3jgsG6
+preauthorized:
+  emails:
+  - 

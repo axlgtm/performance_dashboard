@@ -2,6 +2,14 @@ import streamlit as st
 import numpy as np
 import pandas as pd
 import plotly.express as px
+import yaml
+
+def read_emails():
+    with open('config.yaml', 'r') as f:
+        data = yaml.safe_load(f)
+        rerult = data['preauthorized']['emails']
+        return rerult 
+    return []
 
 def setState(key, value):
     st.session_state[key] = value  
